@@ -667,12 +667,7 @@ Scene scene = Scene();
 
 Camera camera = Camera(Vec3d(0, 1, 30));
 
-void Mode3(float elapsed)
-{
-	camera.Render(10000);
-}
-
-void initRayTrace(void)
+void initScene(void)
 {
 	camera.fov = 90;
 	camera.scene = &scene;
@@ -699,18 +694,11 @@ void initRayTrace(void)
 
 }
 
-/*
---------------------------------------------------------
-General
---------------------------------------------------------
-*/
-
-
 void initialize(void)
 {
 	glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
 	initFrameBuffer();
-	initRayTrace();
+	initScene();
 }
 
 float lastFrameTime = 0.0f;
@@ -726,29 +714,14 @@ void update(void)
 		return;
 	}
 
-	Mode3(elapsed);
+	camera.Render(10000);
 	glutPostRedisplay();
 	lastFrameTime = currentTime;
-	/*
-	if (frameOn++ % 100 == 0)
-	{
-		float fps = 1.0 / elapsed;
-		printf("Time %f, Elapsed %f, Frame rate %f\n", currentTime, elapsed, fps);
-	}*/
 
 }
 
 int main(int argc, char **argv)
 {
-	printf("Hello main\n");
-
-	Vec3d v = Vec3d(1, 0, 0);
-	printf("%f %f %f\n", v.xAngle(), v.yAngle(), v.zAngle());
-	v = Vec3d(0, 1, 0);
-	printf("%f %f %f\n", v.xAngle(), v.yAngle(), v.zAngle());
-	v = Vec3d(0, 0, 1);
-	printf("%f %f %f\n", v.xAngle(), v.yAngle(), v.zAngle());
-
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_DEPTH);
 	glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
