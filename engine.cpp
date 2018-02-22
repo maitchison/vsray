@@ -41,8 +41,8 @@ light gathering (ambient occlusion)
 #include <algorithm>
 #include <limits>
 
-const int SCREEN_WIDTH = 512;
-const int SCREEN_HEIGHT = 512;
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
 const int SCREEN_SCALE = 2;
 uint32_t buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 GLuint tex;
@@ -234,9 +234,28 @@ struct Entity;
 struct Ray;
 struct Sphere;
 struct Plane;
+class Scene;
 
 CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere);
 CollisionResult RayPlaneIntersection(Ray* ray, Plane* plane);
+
+void putPixel(int x, int y, Color col);
+
+class Scene
+{
+	std::vector<Entity*> entities = std::vector<Entity*>();
+
+public:
+	void AddEntity(Entity* entity)
+	{
+		entities.push_back(entity);
+	}
+
+	CollisionResult Trace(Ray* ray);	
+};
+
+
+
 
 struct CollisionResult
 {
@@ -428,62 +447,125 @@ CollisionResult Entity::Trace(Ray* ray)
 
 struct Camera : Entity
 {
-	Vec3d direction;
+	Vec3d rotation;
 	float fov;
+	int pixelOn = 0;
+	Scene* scene;
 
 	Camera(Vec3d location) : Entity(location)
 	{
-		this->fov = 90.0;
-		this->direction = Vec3d(0, 0, -1);
+		this->fov = 90.0;	
 	}
 
-};
-
-class Scene
-{
-	std::vector<Entity*> entities = std::vector<Entity*>();
- 
-	/**
-	 * Adds entity to scene
-	 */
-	public:
-	void AddEntity(Entity* entity)
+	Color TraceRay(Ray ray, int depth = 0)
 	{
-	    entities.push_back(entity);
-	}
+		// trace the ray
+		CollisionResult result = scene->Trace(&ray);
+		Color col = Color(0, 0, 0);
+		if (result.hit()) {
+			col = result.entity->getColor(result.location);
 
-	/**
-	* Trace ray through scene.  Returns point of colision
-	*/
-	CollisionResult Trace(Ray* ray)
-	{
-		// we need to loop through all entities and check which one the ray hits first.
-		// this can be a little slow, and it would be better to do some kind of axis-aligned
-		// bounding box, or bounding sphere.
-		
-		CollisionResult closestCollision = CollisionResult::Empty();
-		closestCollision.distance = 999999.0f;
+			float factor = clipf(50.0 / result.distance, 0.0f, 1.0f);
+			col.r *= factor;
+			col.g *= factor;
+			col.b *= factor;
 
-		for (int i=0; i < entities.size(); i++)
-		{
+			// reflection
+			// stub: add material and isReflective
+			if (depth < 5) {
+				Vec3d incident = (ray.direction).normalized();
+				Vec3d normal = result.normal.normalized();
+				Vec3d reflected = (incident - ((normal * 2) * (Vec3d::Dot(incident, normal)))).normalized();
 
-			if (entities[i] == ray->owner) {
-				continue;
-			}
+				// we should push off from the surface a little to make sure we don't hit the same collision point again.
+				// instead I set an owner and disable self reflections
 
-			CollisionResult result = entities[i]->Trace(ray);
-			if (result.hit() && (result.distance < closestCollision.distance)) 
-			{
-				//printf("%d %f %d\n", i, result.distance, entities.size());
-				closestCollision = result;
+				Ray reflectionRay = Ray(result.location, reflected);
+				reflectionRay.owner = result.entity;
+
+				// trace the ray
+				Color reflectedColor = TraceRay(reflectionRay, depth + 1);
+				float ref = 1.0;
+				float ref2 = clipf(0.5 - depth / 10, 0, 1);
+				col.r = (col.r * ref) + (reflectedColor.r * (ref2));
+				col.g = (col.g * ref) + (reflectedColor.g * (ref2));
+				col.b = (col.b * ref) + (reflectedColor.b * (ref2));
 			}
 		}
-
-		return closestCollision;
+		return col;
 	}
+
+
+	/** Render this number of pixels.  Rendering can be done bit by bit.  Passing -1 causes entire frame to render. */
+	int Render(int pixels = -1, bool autoReset=false)
+	{
+		int totalPixels = SCREEN_WIDTH * SCREEN_HEIGHT;
+		float aspectRatio = float(SCREEN_WIDTH / SCREEN_HEIGHT);
+
+		if (pixels == -1) {
+			pixels = totalPixels - pixelOn;
+		}
+
+		int i;
+		for (i = 0; i < pixels; i++) {
+			
+			pixelOn++;
+
+			if (pixelOn >= totalPixels)
+			{
+				// reset.
+				if (autoReset) pixelOn = 0;
+				return i;
+			}
+
+			int x = pixelOn % SCREEN_WIDTH;
+			int y = pixelOn / SCREEN_WIDTH;
+				
+			// find the rays direction
+			float rx = (2 * ((x + 0.5) / SCREEN_WIDTH) - 1) * tan(fov / 2 * M_PI / 180) * aspectRatio;
+			float ry = (1 - 2 * ((y + 0.5) / SCREEN_HEIGHT)) * tan(fov / 2 * M_PI / 180);
+			Vec3d dir = Vec3d(rx, -ry, -1).normalized();
+
+			dir.rotateX(rotation.x);
+			dir.rotateY(rotation.y);
+			dir.rotateZ(rotation.z);
+
+			Ray ray = Ray(location, dir);
+			Color col = TraceRay(ray);
+
+			putPixel(x, y, col);
+		}
+		return i;
+	}
+
 };
 
+CollisionResult Scene::Trace(Ray* ray)
+{
+	// we need to loop through all entities and check which one the ray hits first.
+	// this can be a little slow, and it would be better to do some kind of axis-aligned
+	// bounding box, or bounding sphere.
+		
+	CollisionResult closestCollision = CollisionResult::Empty();
+	closestCollision.distance = 999999.0f;
 
+	for (int i=0; i < entities.size(); i++)
+	{
+
+		if (entities[i] == ray->owner) {
+			continue;
+		}
+
+		CollisionResult result = entities[i]->Trace(ray);
+		if (result.hit() && (result.distance < closestCollision.distance)) 
+		{
+			//printf("%d %f %d\n", i, result.distance, entities.size());
+			closestCollision = result;
+		}
+	}
+
+	return closestCollision;
+}
 
 
 /*
@@ -577,147 +659,31 @@ void initFrameBuffer(void)
 
 /*
 --------------------------------------------------------
-Mode 1 - Random Pixels
---------------------------------------------------------
-*/
-
-/** Random background. */
-void Mode1(float elapsed)
-{
-	for (int i = 0; i < 100; i++)
-	{
-		int x = rand() % SCREEN_WIDTH;
-		int y = rand() % SCREEN_HEIGHT;
-		putPixel(x, y, Color(randf(), randf(), 0));
-	}	
-}
-
-/*
---------------------------------------------------------
-Mode 2 - Stars
---------------------------------------------------------
-*/
-
-const int NUM_STARS = 1000;
-Vec3d stars[NUM_STARS];
-
-void initStars(void)
-{
-	for (int i = 0; i < NUM_STARS; i++) {
-		float x = (randf() - 0.5) * 100;
-		float y = (randf() - 0.5) * 100;
-		float z = (randf() - 0.5) * 100;
-		stars[i] = Vec3d(x, y, z);
-	}
-}
-
-void drawStars(void)
-{
-	clear(Color(0,0,0));
-	for (int i = 0; i < NUM_STARS; i++) {
-		// apply rotation
-		Vec3d point = stars[i];
-		point.rotate(currentTime / 2.0, currentTime, currentTime / 4.0);
-		// draw it
-		int dx = int((200 * point.x / (point.z + 200)) + (SCREEN_WIDTH / 2));
-		int dy = int((200 * point.y / (point.z + 200)) + (SCREEN_HEIGHT / 2));
-		putPixel(dx, dy, Color(1.0f, 1.0f, 1.0f));
-	}
-
-}
-
-/** Rotating points. */
-void Mode2(float elapsed)
-{
-	drawStars();
-}
-
-/*
---------------------------------------------------------
-Mode 3 - Ray Tracing
+Ray Tracing
 --------------------------------------------------------
 */
 
 Scene scene = Scene();
 
-Color traceRay(Ray ray, int depth = 0)
-{
-	// trace the ray
-	CollisionResult result = scene.Trace(&ray);
-	Color col = Color(0, 0, 0);
-	if (result.hit()) {
-		col = result.entity->getColor(result.location);
-		
-		float factor = clipf(50.0 / result.distance, 0.0f, 1.0f); 
-		col.r *= factor;
-		col.g *= factor;
-		col.b *= factor;
-		
-		// reflection
-		// stub: add material and isReflective
-		if (depth < 5) {
-			Vec3d incident = (ray.direction).normalized();
-			Vec3d normal = result.normal.normalized();
-			Vec3d reflected = (incident - ((normal * 2) * (Vec3d::Dot(incident, normal)))).normalized();
-
-			// we should push off from the surface a little to make sure we don't hit the same collision point again.
-			// instead I set an owner and disable self reflections
-
-			Ray reflectionRay = Ray(result.location, reflected);
-			reflectionRay.owner = result.entity;
-			
-			// trace the ray
-			Color reflectedColor = traceRay(reflectionRay, depth + 1);
-			float ref = 1.0;
-			float ref2 = clipf(0.5 - depth / 10, 0, 1);
-			col.r = (col.r * ref) + (reflectedColor.r * (ref2));
-			col.g = (col.g * ref) + (reflectedColor.g * (ref2));
-			col.b = (col.b * ref) + (reflectedColor.b * (ref2));
-		}
-	}
-	return col;
-}
+Camera camera = Camera(Vec3d(0, 1, 30));
 
 void Mode3(float elapsed)
 {
-	Camera camera = Camera(Vec3d(0, 1, 30));
-	camera.direction = Vec3d(0, 0, -1);
-	camera.fov = 70;
-	float camrx = 0;
-	float camry = 0;
-	//camera.direction.rotateY(currentTime);	
-
-	//printf("cam %f %f %f %f\n", camera.direction.x, camera.direction.y, camera.direction.z, camera.direction.abs());
-
-	int SIZE = SCREEN_HEIGHT;
-
-	for (int y = 0; y < SIZE; y ++)
-		for (int x = 0; x < SIZE; x++)
-		{
-			// find the rays direction
-
-			float rx = (2 * ((x + 0.5) / SIZE) - 1) * tan(camera.fov / 2 * M_PI / 180); 
-			float ry = (1 - 2 * ((y + 0.5) / SIZE)) * tan(camera.fov / 2 * M_PI / 180); 
-
-			Vec3d dir = Vec3d(rx, -ry, -1).normalized();
-			//dir.rotateY(currentTime);
-			Ray ray = Ray(camera.location, dir);
-			Color col = traceRay(ray);
-
-			putPixel(x + (SCREEN_WIDTH/2) - (SIZE/2), y + (SCREEN_HEIGHT/2) - (SIZE/2), col);
-		}
+	camera.Render(10000);
 }
 
 void initRayTrace(void)
 {
+	camera.fov = 90;
+	camera.scene = &scene;
+
 	Sphere* sphere1;
 	Sphere* sphere2;
 	Sphere* sphere3;
 
 	sphere1 = new Sphere(Vec3d(0, 5, 0), 5);
 	sphere1->color = Color(1.0f, 0.5, 0.5);
-	scene.AddEntity(sphere1);
-	
+	scene.AddEntity(sphere1);	
 
 	sphere2 = new Sphere(Vec3d(-12, 5, +4), 5);
 	sphere2->color = Color(0.5, 1.0f, 0.5);
@@ -744,7 +710,6 @@ void initialize(void)
 {
 	glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
 	initFrameBuffer();
-	initStars();
 	initRayTrace();
 }
 
@@ -764,11 +729,12 @@ void update(void)
 	Mode3(elapsed);
 	glutPostRedisplay();
 	lastFrameTime = currentTime;
+	/*
 	if (frameOn++ % 100 == 0)
 	{
 		float fps = 1.0 / elapsed;
 		printf("Time %f, Elapsed %f, Frame rate %f\n", currentTime, elapsed, fps);
-	}
+	}*/
 
 }
 
@@ -787,7 +753,7 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_DEPTH);
 	glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 	glutInitWindowPosition(0, 0);
-	glutCreateWindow("Teapot");
+	glutCreateWindow("VSRAY");
 	initialize();
 	glutDisplayFunc(display);
 	glutIdleFunc(update);
