@@ -40,6 +40,7 @@ light gathering (ambient occlusion)
 #include <algorithm>
 #include <limits>
 #include <vector>
+#include <time.h>
 
 #include <GFX.h>
 #include <Color.h>
@@ -104,12 +105,23 @@ void update(void)
 	currentTime = glutGet(GLUT_ELAPSED_TIME) / 1000.0;	
 	float elapsed = currentTime - lastFrameTime;
 
-
 	if (elapsed < (0.5 / 1000.0)) {
 		return;
 	}
 
-	camera.Render(10000);
+	clock_t t;
+	int f;
+	t = clock();
+	int pixelsRendered = camera.Render(10000);
+	float timeTaken = float(clock() - t) / CLOCKS_PER_SEC;	
+	float pixelsPerSecond = (timeTaken == 0) ? -1 : pixelsRendered / timeTaken;
+	if (frameOn == 0) {
+		printf("Pixels per second = %dk.\n", int(pixelsPerSecond/1000));
+	}
+	
+
+	frameOn++;
+	
 	glutPostRedisplay();
 	lastFrameTime = currentTime;
 
