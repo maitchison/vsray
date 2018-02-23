@@ -1,4 +1,5 @@
 #include <Entity.h>
+#include <algorithm>
 
 CollisionResult::CollisionResult(Vec3d location, Entity* entity = NULL, float distance = 0)
 {
@@ -16,8 +17,6 @@ bool CollisionResult::hit()
 {
 	return entity != NULL;
 }
-
-
 
 Entity::Entity(Vec3d location)
 {
@@ -55,7 +54,7 @@ CollisionResult Sphere::Trace(Ray* ray)
 Color Sphere::getColor(Vec3d location) 
 {
 	return color;
-	//bool cell = location.x < this->location.x;
+	//bool cell = location.y < this->location.y;
 	//return cell ? Color(1,0,0) : Color(0,0,1);
 }
 
@@ -71,7 +70,7 @@ CollisionResult Plane::Trace(Ray* ray)
 
 Color Plane::getColor(Vec3d location) 
 {
-	bool cell = (int(location.x / 1) + int(location.z / 1)) % 2;
+	bool cell = (int(location.x) + int(location.z)) & 1;
 	return cell ? Color(0, 0, 0) : Color(0.5, 0.5, 0.5);
 }
 
@@ -81,7 +80,8 @@ CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 	// first we project the circle center onto the line.
 	// p is now the closest point of the ray to the sphere.
 	Vec3d p = ray->Project(sphere->location);
-	float l = (p - ray->location).abs();
+	Vec3d d = p - ray->location;
+	float l = Vec3d::Dot(ray->direction, d) > 0 ? d.abs() : -d.abs();
 
 	// now we have a triangle from the sphere's center, to the projected point, and the intesection point.
 	// we use r^2 = a^2 + b^2 and solve for a.
@@ -97,18 +97,16 @@ CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 	float t1 = l + c;
 	float t2 = l - c;
 
-	/*
-	float t = 0;
-	if ((t1 > 0) && (t1 < t2)) t = t1;
-	if ((t2 > 0) && (t2 < t1)) t = t2;
-	*/
-	float t = t2;
+	if (t1 > t2) std::swap(t1, t2);
+	if (t1 < 0) {
+		t1 = t2;
+	}
 
-	if (t < EPSILON) return CollisionResult::Empty();
+	if (t1 < 0) return CollisionResult::Empty();
 
-	Vec3d hit = ray->location + (ray->direction * t);
+	Vec3d hit = ray->location + (ray->direction * t1);
 
-	CollisionResult result = CollisionResult(hit, sphere, t);
+	CollisionResult result = CollisionResult(hit, sphere, t1);
 	result.normal = (hit - sphere->location).normalized();
 	return result;
 }

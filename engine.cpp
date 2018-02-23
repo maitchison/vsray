@@ -10,12 +10,12 @@ todo:
 [done] Planes
 [done] Reflections
 [done] progessive render
-create graphics library class
-put classes into files
-proper camera tracer
+[done] create graphics library class
+[done] put classes into files
+lighting
+materials
 UV mapping
 aa
-lighting 
 shadows
 
 triangles / meshes
@@ -55,7 +55,7 @@ float currentTime = 0.0;
 
 Scene scene = Scene();
 
-Camera camera = Camera(Vec3d(0, 1, 30));
+Camera camera = Camera(Vec3d());
 
 
 void display(void)
@@ -67,6 +67,11 @@ void initScene(void)
 {
 	camera.fov = 90;
 	camera.scene = &scene;
+	camera.location = Vec3d(0, 10, 20);
+	camera.rotation.x = -0.5;	
+
+	scene.AddLight(new Light(Vec3d(30, 30, 10), Color(1, 1, 1)));
+
 
 	Sphere* sphere1;
 	Sphere* sphere2;
@@ -98,6 +103,7 @@ void initialize(void)
 }
 
 float lastFrameTime = 0.0f;
+int counter = 0;
 int frameOn = 0;
 
 void update(void)
@@ -112,15 +118,21 @@ void update(void)
 	clock_t t;
 	int f;
 	t = clock();
-	int pixelsRendered = camera.Render(10000);
+	int pixelsRendered = camera.Render(20*1000);
+	/*
+	if (pixelsRendered == 0) {
+		frameOn += 1;
+		camera.rotation.y += 0.1;
+		camera.pixelOn = 0;
+	}
+	*/
 	float timeTaken = float(clock() - t) / CLOCKS_PER_SEC;	
 	float pixelsPerSecond = (timeTaken == 0) ? -1 : pixelsRendered / timeTaken;
-	if (frameOn == 0) {
+	if (counter == 0) {
 		printf("Pixels per second = %dk.\n", int(pixelsPerSecond/1000));
 	}
-	
 
-	frameOn++;
+	counter++;
 	
 	glutPostRedisplay();
 	lastFrameTime = currentTime;

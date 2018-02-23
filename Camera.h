@@ -1,9 +1,10 @@
 #pragma once
 
+class Scene;
+
 #include <Entity.h>
 #include <Vec3d.h>
 #include <Color.h>
-#include <Scene.h>
 
 struct Camera : Entity
 {

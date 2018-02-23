@@ -32,4 +32,27 @@ struct Color
 		return (_r)+(_g << 8) + (_b << 16);
 	}
 
+	/* Overload + operator to add two Box objects. */
+	Color operator+(Color other)
+	{
+		return Color(this->r + other.r, this->g + other.g, this->b + other.b);
+	}
+
+	Color operator-(Color other)
+	{
+		return Color(this->r - other.r, this->g - other.g, this->b - other.b);
+	}
+
+	Color operator*(Color other)
+	{
+		return Color(this->r * other.r, this->g * other.g, this->b * other.b);
+	}
+
+	/* Overload + operator to add two Box objects. */
+	Color operator*(float factor)
+	{
+		return Color(r * factor, g * factor, b * factor);
+	}
+
+
 };

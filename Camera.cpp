@@ -1,5 +1,6 @@
 #include "Camera.h"
 #include "GFX.h"
+#include "Scene.h"
 
 Camera::Camera(Vec3d location) : Entity(location)
 {
@@ -11,16 +12,12 @@ Color Camera::TraceRay(Ray ray, int depth)
 	CollisionResult result = scene->Trace(&ray);
 	Color col = Color(0, 0, 0);
 	if (result.hit()) {
-		col = result.entity->getColor(result.location);
 
-		float factor = clipf(50.0 / result.distance, 0.0f, 1.0f);
-		col.r *= factor;
-		col.g *= factor;
-		col.b *= factor;
+		col = scene->CalculateLighting(result, *this);
 
 		// reflection
 		// stub: add material and isReflective
-		if (depth < 5) {
+		if (depth < 10) {
 			Vec3d incident = (ray.direction).normalized();
 			Vec3d normal = result.normal.normalized();
 			Vec3d reflected = (incident - ((normal * 2) * (Vec3d::Dot(incident, normal)))).normalized();
@@ -53,7 +50,7 @@ int Camera::Render(int pixels, bool autoReset)
 		pixels = totalPixels - pixelOn;
 	}
 
-	int i;
+	int i = 0;
 	for (i = 0; i < pixels; i++) {
 
 		pixelOn++;
