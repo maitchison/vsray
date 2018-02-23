@@ -17,7 +17,7 @@ Color Camera::TraceRay(Ray ray, int depth)
 
 		// reflection
 		// stub: add material and isReflective
-		if (depth < 0) {
+		if (depth < 10) {
 			Vec3d incident = (ray.rotation).normalized();
 			Vec3d normal = result.normal.normalized();
 			Vec3d reflected = (incident - ((normal * 2) * (Vec3d::Dot(incident, normal)))).normalized();
@@ -40,8 +40,7 @@ Color Camera::TraceRay(Ray ray, int depth)
 	return col;
 }
 
-
-int Camera::Render(int pixels, bool autoReset)
+int Camera::Render(int pixels, int oversample, float defocus, bool autoReset)
 {
 	int totalPixels = SCREEN_WIDTH * SCREEN_HEIGHT;
 	float aspectRatio = float(SCREEN_WIDTH / SCREEN_HEIGHT);
@@ -49,7 +48,7 @@ int Camera::Render(int pixels, bool autoReset)
 	if (pixels == -1) {
 		pixels = totalPixels - pixelOn;
 	}
-
+	
 	int i = 0;
 	for (i = 0; i < pixels; i++) {
 
@@ -65,19 +64,27 @@ int Camera::Render(int pixels, bool autoReset)
 		int x = pixelOn % SCREEN_WIDTH;
 		int y = pixelOn / SCREEN_WIDTH;
 
-		// find the rays direction
-		float rx = (2 * ((x + 0.5) / SCREEN_WIDTH) - 1) * tan(fov / 2 * M_PI / 180) * aspectRatio;
-		float ry = (1 - 2 * ((y + 0.5) / SCREEN_HEIGHT)) * tan(fov / 2 * M_PI / 180);
-		Vec3d dir = Vec3d(rx, -ry, -1).normalized();
+		Color outputCol = Color(0, 0, 0);
 
-		dir.rotateX(rotation.x);
-		dir.rotateY(rotation.y);
-		dir.rotateZ(rotation.z);
+		for (int j = 0; j < oversample; j++) {
+			float jitterx = (oversample == 1) ? 0.5 : randf();
+			float jittery = (oversample == 1) ? 0.5 : randf();
 
-		Ray ray = Ray(location, dir);
-		Color col = TraceRay(ray);
+			// find the rays direction
+			float rx = (2 * ((x + jitterx) / SCREEN_WIDTH) - 1) * tan(fov / 2 * M_PI / 180) * aspectRatio;
+			float ry = (1 - 2 * ((y + jittery) / SCREEN_HEIGHT)) * tan(fov / 2 * M_PI / 180);
+			Vec3d dir = Vec3d(rx, -ry, -1).normalized();
 
-		gfx.putPixel(x, y, col);
+			dir.rotateX(rotation.x + (randf() - 0.5) * defocus);
+			dir.rotateY(rotation.y + (randf() - 0.5) * defocus);
+			dir.rotateZ(rotation.z);
+
+			Ray ray = Ray(location, dir);
+			Color col = TraceRay(ray);
+			outputCol = outputCol + (col * (1.0/oversample));
+		}
+		
+		gfx.putPixel(x, y, outputCol);
 	}
 	return i;
 }

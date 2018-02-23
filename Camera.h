@@ -17,7 +17,12 @@ struct Camera : Entity
 	
 	Color TraceRay(Ray ray, int depth = 0);
 	
-	/** Render this number of pixels.  Rendering can be done bit by bit.  Passing -1 causes entire frame to render. */
-	int Render(int pixels = -1, bool autoReset = false);	
+	/** Render this number of pixels.  Rendering can be done bit by bit.  
+	 @param pixels: maximum number of pixels to render.  -1 renders entire image.
+	 @param oversample: number of rays to trace per pixel.  1 for standard render.
+	 @param defocus: randomly defocus rays by this number of radians.  Requires high oversampling for best results.
+	 @param autoReset: causes renderer to render next frame once this frame finishes rendering.
+	*/
+	int Camera::Render(int pixels, int oversample=1, float defocus = 0.0f, bool autoReset=false);
 
 };

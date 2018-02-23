@@ -49,8 +49,10 @@ struct Entity
 	virtual Vec2d getUV(Vec3d pos);
 };
 
-struct Ray : Entity
+struct Ray 
 {
+	Vec3d location;
+	Vec3d rotation;
 	Entity* owner;
 
 	Ray(Vec3d location, Vec3d rotation);

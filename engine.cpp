@@ -9,17 +9,18 @@ todo:
 [done] Scenes 
 [done] Planes
 [done] Reflections
+
 [done] progessive render
 [done] create graphics library class
 [done] put classes into files
 [done] lighting
-Entity Transforms (rotation, scale, etc)
-UV mapping
-materials
+[done] shadows
+[done] Entity Transforms (rotation, scale, etc)
+[done] UV mapping
+[done] materials
 
-
-aa
-shadows
+[...] aa
+[ ] camera defocus
 
 triangles / meshes
 light gathering (ambient occlusion)
@@ -125,14 +126,16 @@ void update(void)
 	clock_t t;
 	int f;
 	t = clock();
-	int pixelsRendered = camera.Render(20*1000);
-	/*
-	if (pixelsRendered == 0) {
-		frameOn += 1;
-		camera.rotation.y += 0.1;
-		camera.pixelOn = 0;
+	int pixelsRendered;
+	if (true) {
+		// hq mode
+		pixelsRendered = camera.Render(20 * 10, 128, 0.015);
 	}
-	*/
+	else {
+		// lq mode
+		pixelsRendered = camera.Render(20 * 1000);
+	}
+	
 	float timeTaken = float(clock() - t) / CLOCKS_PER_SEC;	
 	float pixelsPerSecond = (timeTaken == 0) ? -1 : pixelsRendered / timeTaken;
 	if (counter == 0) {

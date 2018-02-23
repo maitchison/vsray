@@ -56,8 +56,9 @@ Vec3d Entity::toWorldSpace(Vec3d pos)
 
 //--------------------------------------------------
 
-Ray::Ray(Vec3d location, Vec3d direction) : Entity(location)
+Ray::Ray(Vec3d location, Vec3d direction) 
 {
+	this->location = location;
 	this->rotation = direction;
 	this->owner = NULL;
 }

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hello Teapot", "Hello Teapot\Hello Teapot.vcxproj", "{D10502A8-DF1A-4889-A8D2-D241EFBF2B5D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vsray", "vsray.vcxproj", "{D10502A8-DF1A-4889-A8D2-D241EFBF2B5D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +26,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {99287AD0-7D32-4860-ABE0-94BDD49827DB}
+		SolutionGuid = {348D591E-B0C7-44FD-A5AF-BBFE4B85885D}
 	EndGlobalSection
 EndGlobal
