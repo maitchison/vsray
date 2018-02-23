@@ -48,7 +48,8 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera)
 	Color ambientLight = Color(AMBIENT_LIGHT, AMBIENT_LIGHT, AMBIENT_LIGHT);
 
 	// first we get the color from the hit object
-	Color diffuseColor = result.entity->getColor(result.location);
+	Vec2d uv = result.entity->getUV(result.entity->toObjectSpace(result.location));
+	Color diffuseColor = result.entity->material->getColor(uv) * result.entity->color;
 	Color diffuseLight = Color();
 	Color specularLight = Color();
 

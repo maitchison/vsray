@@ -17,8 +17,8 @@ Color Camera::TraceRay(Ray ray, int depth)
 
 		// reflection
 		// stub: add material and isReflective
-		if (depth < 10) {
-			Vec3d incident = (ray.direction).normalized();
+		if (depth < 0) {
+			Vec3d incident = (ray.rotation).normalized();
 			Vec3d normal = result.normal.normalized();
 			Vec3d reflected = (incident - ((normal * 2) * (Vec3d::Dot(incident, normal)))).normalized();
 

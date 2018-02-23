@@ -1,6 +1,8 @@
 #include <Entity.h>
 #include <algorithm>
 
+//--------------------------------------------------
+
 CollisionResult::CollisionResult(Vec3d location, Entity* entity = NULL, float distance = 0)
 {
 	this->location = location;
@@ -18,28 +20,55 @@ bool CollisionResult::hit()
 	return entity != NULL;
 }
 
+//--------------------------------------------------
+
 Entity::Entity(Vec3d location)
 {
 	this->location = location;
-	this->color = Color(0.5f, 0.5f, 0.5f);
 }
 
-Color Entity::getColor(Vec3d location)
+Vec2d Entity::getUV(Vec3d pos)
 {
-	return color;
+	// planar mapping
+	return Vec2d(pos.x / 40, pos.z / 40);
 }
+
+Vec3d Entity::toObjectSpace(Vec3d pos)
+{
+	pos -= location;
+	pos /= scale;
+	pos.rotateZ(-rotation.z);
+	pos.rotateY(-rotation.y);
+	pos.rotateX(-rotation.x);
+	return pos;
+}
+
+Vec3d Entity::toWorldSpace(Vec3d pos)
+{
+	pos.rotateX(rotation.x);
+	pos.rotateY(rotation.y);
+	pos.rotateZ(rotation.z);
+	pos *= scale;
+	pos += location;
+	return pos;
+}
+
+
+//--------------------------------------------------
 
 Ray::Ray(Vec3d location, Vec3d direction) : Entity(location)
 {
-	this->direction = direction;
+	this->rotation = direction;
 	this->owner = NULL;
 }
 
 Vec3d Ray::Project(Vec3d p)
 {
 	p = p - location;
-	return location + (direction * (Vec3d::Dot(direction, p) / direction.abs2()));
+	return location + (rotation * (Vec3d::Dot(rotation, p) / rotation.abs2()));
 }
+
+//--------------------------------------------------
 
 Sphere::Sphere(Vec3d location, float radius) : Entity(location)
 {
@@ -51,29 +80,27 @@ CollisionResult Sphere::Trace(Ray* ray)
 	return RaySphereIntersection(ray, this);
 }
 
-Color Sphere::getColor(Vec3d location) 
+Vec2d Sphere::getUV(Vec3d pos)
 {
-	return color;
-	//bool cell = location.y < this->location.y;
-	//return cell ? Color(1,0,0) : Color(0,0,1);
+	// spherical mapping	
+	pos /= radius;
+	float u = 0.5 + (atan2(pos.z, pos.x) / (M_PI * 2));
+	float v = 0.5 - (asin(pos.y) / M_PI);
+	return Vec2d(u, v);
 }
 
-Plane::Plane(Vec3d location, Vec3d normal) : Entity(location)
-{
-	this->normal = normal;
-}
+//--------------------------------------------------
 
 CollisionResult Plane::Trace(Ray* ray) 
 {
 	return RayPlaneIntersection(ray, this);
 }
 
-Color Plane::getColor(Vec3d location) 
+Plane::Plane(Vec3d location) : Entity(location)
 {
-	bool cell = (int(location.x) + int(location.z)) & 1;
-	return cell ? Color(0, 0, 0) : Color(0.5, 0.5, 0.5);
 }
 
+//--------------------------------------------------
 
 CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 {
@@ -81,7 +108,7 @@ CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 	// p is now the closest point of the ray to the sphere.
 	Vec3d p = ray->Project(sphere->location);
 	Vec3d d = p - ray->location;
-	float l = Vec3d::Dot(ray->direction, d) > 0 ? d.abs() : -d.abs();
+	float l = Vec3d::Dot(ray->rotation, d) > 0 ? d.abs() : -d.abs();
 
 	// now we have a triangle from the sphere's center, to the projected point, and the intesection point.
 	// we use r^2 = a^2 + b^2 and solve for a.
@@ -104,7 +131,7 @@ CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 
 	if (t1 < 0) return CollisionResult::Empty();
 
-	Vec3d hit = ray->location + (ray->direction * t1);
+	Vec3d hit = ray->location + (ray->rotation * t1);
 
 	CollisionResult result = CollisionResult(hit, sphere, t1);
 	result.normal = (hit - sphere->location).normalized();
@@ -117,7 +144,7 @@ CollisionResult RayPlaneIntersection(Ray* ray, Plane* plane)
 	// https://stackoverflow.com/questions/5666222/3d-line-plane-intersection
 
 	// rotate objects such that plane is centered at 0,0 and facing up.
-	Vec3d u = ray->direction;
+	Vec3d u = ray->rotation;
 	float dot = Vec3d::Dot(plane->normal, u);
 
 	if (abs(dot) > EPSILON)
@@ -126,7 +153,8 @@ CollisionResult RayPlaneIntersection(Ray* ray, Plane* plane)
 		float t = -Vec3d::Dot(plane->normal, w) / dot;
 		if (t > EPSILON)
 		{
-			CollisionResult result = CollisionResult(ray->location + ray->direction * t, plane, t);
+			Vec3d hit = ray->location + ray->rotation * t;
+			CollisionResult result = CollisionResult(hit, plane, t);
 			result.normal = plane->normal.normalized();
 			return result;
 		}

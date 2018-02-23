@@ -12,9 +12,12 @@ todo:
 [done] progessive render
 [done] create graphics library class
 [done] put classes into files
-lighting
-materials
+[done] lighting
+Entity Transforms (rotation, scale, etc)
 UV mapping
+materials
+
+
 aa
 shadows
 
@@ -89,9 +92,13 @@ void initScene(void)
 	sphere3->color = Color(0.5, 0.5, 1.0f);
 	scene.AddEntity(sphere3);
 
-	Plane* plane1 = new Plane(Vec3d(0,0,0), Vec3d(0,1,0));
-	plane1->color = Color(0.5f, 0.5f, 1.0f);
+	Plane* plane1 = new Plane(Vec3d(0,0,0));	
 	scene.AddEntity(plane1);
+
+	//plane1->material = new CheckBoardMaterial();
+	plane1->material = new CheckBoardMaterial();
+	sphere1->material = new CheckBoardMaterial();
+	sphere2->material = new PerlinMaterial();
 
 }
 
