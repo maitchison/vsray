@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Color.h>
+#include "Color.h"
 #include <stdint.h>
 
 #ifdef __APPLE__
@@ -21,10 +21,10 @@ class GFX
 	GLuint tex;
 
 public:
-	void GFX::putPixel(int x, int y, Color col);
-	void GFX::clear(Color col);
-	void GFX::blit();
-	void GFX::init(void);
+	void putPixel(int x, int y, Color col);
+	void clear(Color col);
+	void blit();
+	void init(void);
 };
 
 // singleton access to graphics library.

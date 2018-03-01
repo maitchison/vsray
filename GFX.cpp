@@ -4,7 +4,7 @@ Author Matthew Aitchison
 Date Feb 2018
 */
 
-#include <GFX.h>
+#include "GFX.h"
 
 /** Place a pixel on the frame buffer. */
 void GFX::putPixel(int x, int y, Color col)

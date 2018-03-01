@@ -129,6 +129,7 @@ struct Vec3d
 		this->x += rhs.x;
 		this->y += rhs.y;
 		this->z += rhs.z;
+        return *this;
 	}
 
 	Vec3d& operator*=(Vec3d& rhs)
@@ -136,6 +137,7 @@ struct Vec3d
 		this->x *= rhs.x;
 		this->y *= rhs.y;
 		this->z *= rhs.z;
+        return *this;
 	}
 
 	Vec3d& operator*=(float& rhs)
@@ -143,6 +145,7 @@ struct Vec3d
 		this->x *= rhs;
 		this->y *= rhs;
 		this->z *= rhs;
+        return *this;
 	}
 
 	Vec3d& operator/=(float& rhs)
@@ -150,6 +153,7 @@ struct Vec3d
 		this->x /= rhs;
 		this->y /= rhs;
 		this->z /= rhs;
+        return *this;
 	}
 
 	Vec3d& operator/=(Vec3d& rhs)
@@ -157,6 +161,7 @@ struct Vec3d
 		this->x /= rhs.x;
 		this->y /= rhs.y;
 		this->z /= rhs.z;
+        return *this;
 	}
 
 	Vec3d& operator-=(Vec3d& rhs)
@@ -164,6 +169,7 @@ struct Vec3d
 		this->x -= rhs.x;
 		this->y -= rhs.y;
 		this->z -= rhs.z;
+        return *this;
 	}
 
 	Vec3d operator*(float b)

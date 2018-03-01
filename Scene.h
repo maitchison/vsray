@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include <Entity.h>
-#include <Light.h>
-#include <Camera.h>
+#include "Entity.h"
+#include "Light.h"
+#include "Camera.h"
 
 class Scene
 {

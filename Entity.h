@@ -1,9 +1,10 @@
 #pragma once
 
-#include <Vec3d.h>
-#include <Color.h>
 #include <stdlib.h>
-#include <Material.h>
+
+#include "Vec3d.h"
+#include "Color.h"
+#include "Material.h"
 
 struct CollisionResult;
 struct Entity;

@@ -2,9 +2,9 @@
 
 class Scene;
 
-#include <Entity.h>
-#include <Vec3d.h>
-#include <Color.h>
+#include "Entity.h"
+#include "Vec3d.h"
+#include "Color.h"
 
 struct Camera : Entity
 {
@@ -23,6 +23,6 @@ struct Camera : Entity
 	 @param defocus: randomly defocus rays by this number of radians.  Requires high oversampling for best results.
 	 @param autoReset: causes renderer to render next frame once this frame finishes rendering.
 	*/
-	int Camera::Render(int pixels, int oversample=1, float defocus = 0.0f, bool autoReset=false);
+	int Render(int pixels, int oversample=1, float defocus = 0.0f, bool autoReset=false);
 
 };
