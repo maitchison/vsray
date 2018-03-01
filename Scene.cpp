@@ -42,10 +42,22 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera)
 {
 	const float AMBIENT_LIGHT = 0.1f;
 
-	// strang eto use a collision result, but it has normal information and will eventually have uv.  
+	// strange to use a collision result, but it has normal information and will eventually have uv.  
 	// Maybe I should call this something else, like a ray collision or something?
 
 	Color ambientLight = Color(AMBIENT_LIGHT, AMBIENT_LIGHT, AMBIENT_LIGHT);
+
+	// collect ambient light using a hemisphere
+	ambientLight = Color(0,0,0);
+	for (int i = 0; i < 16; i ++) {
+		Vec3d dir = result.normal;
+		dir.rotateX((randf() - 0.5) * M_PI); 
+		dir.rotateY((randf() - 0.5) * M_PI); 
+		Ray ray = Ray(result.location + (dir * 0.001), dir);
+		CollisionResult ambientResult = Trace(&ray);
+		Color ambientSample = CalculateLighting(ambientResult, camera); 
+		ambientLight = ambientLight + (ambientSample * (1/16));
+	}
 
 	// first we get the color from the hit object
 	Vec2d uv = result.entity->getUV(result.entity->toObjectSpace(result.location));

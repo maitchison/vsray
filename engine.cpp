@@ -18,13 +18,14 @@ todo:
 [done] Entity Transforms (rotation, scale, etc)
 [done] UV mapping
 [done] materials
-
 [done] aa
 [done] camera defocus
-
 [done] blur reflections
+[done] simple progressive render
 
-low res preview
+indirect light sampling
+
+performance optimizations (vectors etc, also profile)
 
 triangles / meshes
 light gathering (indirect lighting)
