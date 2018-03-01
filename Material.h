@@ -9,6 +9,10 @@ class Material
 {
 public:
 	Color col = Color(0.75, 0.85, 0.98);
+	float reflectivity = 0.0;
+	float reflectionScatter = 0.0;
+	float hardness = 0.1;
+	float specularPower = 1.0;
 	
 public:
 	/* Get color from UV location. */

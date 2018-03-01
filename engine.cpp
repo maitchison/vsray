@@ -19,11 +19,18 @@ todo:
 [done] UV mapping
 [done] materials
 
-[...] aa
-[ ] camera defocus
+[done] aa
+[done] camera defocus
+
+[done] blur reflections
+
+low res preview
 
 triangles / meshes
-light gathering (ambient occlusion)
+light gathering (indirect lighting)
+cubes
+clipped planes
+polygons
 
 */
 
@@ -46,16 +53,21 @@ light gathering (ambient occlusion)
 #include <vector>
 #include <time.h>
 
-#include <GFX.h>
-#include <Color.h>
-#include <Vec3d.h>
-#include <Util.h>
-#include <Camera.h>
-#include <Scene.h>
+#include "GFX.h"
+#include "Color.h"
+#include "Vec3d.h"
+#include "Util.h"
+#include "Camera.h"
+#include "Scene.h"
 
-const int SCREEN_SCALE = 2;
+const int SCREEN_SCALE = 1;
 
-float currentTime = 0.0;
+// Number of rays per pixel to cast in LQ mode.
+const int LQ_RAYS = 1;
+const int HQ_RAYS = 16;
+
+
+float currentTime = 0.00;
 
 Scene scene = Scene();
 
@@ -101,6 +113,13 @@ void initScene(void)
 	sphere1->material = new CheckBoardMaterial();
 	sphere2->material = new PerlinMaterial();
 
+	plane1->material->reflectivity = 0.75;
+	plane1->material->reflectionScatter = 0.0;
+
+	sphere3->material->reflectivity = 0.9;
+	sphere3->material->reflectionScatter = 5.0;
+
+
 }
 
 void initialize(void)
@@ -113,6 +132,12 @@ void initialize(void)
 float lastFrameTime = 0.0f;
 int counter = 0;
 int frameOn = 0;
+
+const int RM_NONE = 0;
+const int RM_LQ = 1;
+const int RM_HQ = 2;
+
+int render_mode = RM_LQ;
 
 void update(void)
 {
@@ -127,13 +152,20 @@ void update(void)
 	int f;
 	t = clock();
 	int pixelsRendered;
-	if (true) {
-		// hq mode
-		pixelsRendered = camera.Render(20 * 10, 128, 0.015);
-	}
-	else {
-		// lq mode
-		pixelsRendered = camera.Render(20 * 1000);
+	switch (render_mode) {
+		case RM_LQ:
+			pixelsRendered = camera.Render(20 * 1000, LQ_RAYS);
+			if (pixelsRendered == 0) {
+				render_mode = RM_HQ;
+				camera.pixelOn = 0;
+			}
+			break;
+		case RM_HQ:
+			pixelsRendered = camera.Render(20 * 100, HQ_RAYS);
+			if (pixelsRendered == 0) {
+				render_mode = RM_NONE;
+			}
+			break;
 	}
 	
 	float timeTaken = float(clock() - t) / CLOCKS_PER_SEC;	

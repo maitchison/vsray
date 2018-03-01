@@ -58,6 +58,7 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera)
 	{
 
 		Light* light = lights[i];
+		Material* material = result.entity->material;
 
 		// trace from light to object and see what we hit.
 		float distanceToLight = (light->location - result.location).abs();
@@ -77,7 +78,7 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera)
 			Vec3d toCamera = (camera.location - result.location).normalized();
 			Vec3d halfVector = (toLight + toCamera).normalized();
 			float specularPower = clipf(Vec3d::Dot(result.normal, halfVector), 0, 1);
-			specularPower = clipf(std::powf(specularPower, 50), 0, 1);
+			specularPower = clipf(std::powf(specularPower, 1/material->hardness), 0, 1) * material->specularPower;
 
 			diffuseLight = diffuseLight + light->color * diffusePower * attenuation;
 			specularLight = specularLight + light->color * specularPower * attenuation;

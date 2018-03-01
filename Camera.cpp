@@ -15,9 +15,11 @@ Color Camera::TraceRay(Ray ray, int depth)
 
 		col = scene->CalculateLighting(result, *this);
 
+		Material* hitMaterial = result.entity->material;
+		float reflectivity = hitMaterial->reflectivity;
+
 		// reflection
-		// stub: add material and isReflective
-		if (depth < 10) {
+		if ((reflectivity > 0) && (depth < 10)) {
 			Vec3d incident = (ray.rotation).normalized();
 			Vec3d normal = result.normal.normalized();
 			Vec3d reflected = (incident - ((normal * 2) * (Vec3d::Dot(incident, normal)))).normalized();
@@ -28,20 +30,41 @@ Color Camera::TraceRay(Ray ray, int depth)
 			Ray reflectionRay = Ray(result.location, reflected);
 			reflectionRay.owner = result.entity;
 
+			float scatterRadians = hitMaterial->reflectionScatter * M_PI / 180;
+
+			if (scatterRadians > 0) {
+				float scatterX = (randf() - 0.5) * scatterRadians;
+				float scatterY = (randf() - 0.5) * scatterRadians;
+				float scatterZ = (randf() - 0.5) * scatterRadians;
+				reflectionRay.rotation.rotateX(scatterX);
+				reflectionRay.rotation.rotateY(scatterY);
+				reflectionRay.rotation.rotateZ(scatterZ);
+			}
+
 			// trace the ray
 			Color reflectedColor = TraceRay(reflectionRay, depth + 1);
-			float ref = 1.0;
-			float ref2 = clipf(0.5 - depth / 10, 0, 1);
-			col.r = (col.r * ref) + (reflectedColor.r * (ref2));
-			col.g = (col.g * ref) + (reflectedColor.g * (ref2));
-			col.b = (col.b * ref) + (reflectedColor.b * (ref2));
+			float orgFactor = 1.0 - reflectivity;
+			float refFactor = reflectivity * clipf(0.5 - depth / 10, 0, 1);
+			col.r = (col.r * orgFactor) + (reflectedColor.r * (refFactor));
+			col.g = (col.g * orgFactor) + (reflectedColor.g * (refFactor));
+			col.b = (col.b * orgFactor) + (reflectedColor.b * (refFactor));
 		}
 	}
 	return col;
 }
 
+int block(int x, int blockSize, int width)
+{
+	int blocks = ((width-1) / blockSize)+1;
+	int block = x % blocks;
+	return block * blockSize + x / blocks;
+}
+
 int Camera::Render(int pixels, int oversample, float defocus, bool autoReset)
 {
+
+	bool PREVIEW_MODE = false;
+
 	int totalPixels = SCREEN_WIDTH * SCREEN_HEIGHT;
 	float aspectRatio = float(SCREEN_WIDTH / SCREEN_HEIGHT);
 
@@ -61,8 +84,19 @@ int Camera::Render(int pixels, int oversample, float defocus, bool autoReset)
 			return i;
 		}
 
-		int x = pixelOn % SCREEN_WIDTH;
-		int y = pixelOn / SCREEN_WIDTH;
+		int x = 0;
+		int y = 0;
+
+		if (PREVIEW_MODE) {
+			// render pixels in a different order.
+			x = pixelOn % SCREEN_WIDTH;
+			y = pixelOn / SCREEN_WIDTH;
+			y = block(y, 16, SCREEN_HEIGHT);
+		} else {
+			// standard scan
+			x = pixelOn % SCREEN_WIDTH;
+			y = pixelOn / SCREEN_WIDTH;
+		}
 
 		Color outputCol = Color(0, 0, 0);
 
@@ -84,7 +118,15 @@ int Camera::Render(int pixels, int oversample, float defocus, bool autoReset)
 			outputCol = outputCol + (col * (1.0/oversample));
 		}
 		
-		gfx.putPixel(x, y, outputCol);
+		if (PREVIEW_MODE && (y % 16) == 0) {
+			for (int k = 0; k < 16; k ++)
+				gfx.putPixel(x, y+k, outputCol);		
+		} else {	
+			gfx.putPixel(x, y, outputCol);
+			gfx.putPixel(x, y+2, Color(1,1,1));
+			gfx.putPixel(x, y+1, Color(0,0,0));
+			gfx.putPixel(x, y+3, Color(0,0,0));
+		}
 	}
 	return i;
 }
