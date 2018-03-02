@@ -23,7 +23,11 @@ todo:
 [done] blur reflections
 [done] simple progressive render
 
-indirect light sampling
+[done] indirect light sampling (but very slow)
+
+[...] skymap (just needs in the renderer aswell)
+
+some kind of GI caching (maybe a voxel map?)
 
 performance optimizations (vectors etc, also profile)
 
@@ -33,6 +37,15 @@ cubes
 clipped planes
 polygons
 
+*/
+
+/*
+Performance
+
+Start: 35k
+AVX2: 35k
+Release: 215k
+Optimized ray sphere intersection: 250k
 */
 
 #define _USE_MATH_DEFINES
@@ -65,7 +78,7 @@ const int SCREEN_SCALE = 1;
 
 // Number of rays per pixel to cast in LQ mode.
 const int LQ_RAYS = 1;
-const int HQ_RAYS = 16;
+const int HQ_RAYS = 128;
 
 
 float currentTime = 0.00;
@@ -84,21 +97,21 @@ void initScene(void)
 {
 	camera.fov = 90;
 	camera.scene = &scene;
-	camera.location = Vec3d(0, 10, 20);
+	camera.location = Vec3d(0, 12, 10);
 	camera.rotation.x = -0.5;	
 
-	scene.AddLight(new Light(Vec3d(30, 30, 10), Color(1, 1, 1)));
-
+	//scene.AddLight(new Light(Vec3d(30, 30, 10), Color(1, 1, 1)));
 
 	Sphere* sphere1;
 	Sphere* sphere2;
 	Sphere* sphere3;
+	Sphere* sphere4;
 
-	sphere1 = new Sphere(Vec3d(0, 5, 0), 5);
+	sphere1 = new Sphere(Vec3d(0, 5, -10), 5);
 	sphere1->color = Color(1.0f, 0.5, 0.5);
 	scene.AddEntity(sphere1);	
 
-	sphere2 = new Sphere(Vec3d(-12, 5, +4), 5);
+	sphere2 = new Sphere(Vec3d(-15, 5, -15), 5);
 	sphere2->color = Color(0.5, 1.0f, 0.5);
 	scene.AddEntity(sphere2);
 
@@ -106,19 +119,22 @@ void initScene(void)
 	sphere3->color = Color(0.5, 0.5, 1.0f);
 	scene.AddEntity(sphere3);
 
+	sphere4 = new Sphere(Vec3d(12, 3, -30), 3);
+	sphere4->color = Color(0.5, 0.5, 1.0f);
+	scene.AddEntity(sphere4);
+
 	Plane* plane1 = new Plane(Vec3d(0,0,0));	
 	scene.AddEntity(plane1);
 
-	//plane1->material = new CheckBoardMaterial();
-	plane1->material = new CheckBoardMaterial();
-	sphere1->material = new CheckBoardMaterial();
-	sphere2->material = new PerlinMaterial();
+	plane1->material = new Material();
+	sphere1->material = new Material();
+	sphere2->material = new Material();
+	sphere3->material = new Material();
 
-	plane1->material->reflectivity = 0.75;
-	plane1->material->reflectionScatter = 0.0;
+	sphere4->material->emissiveColor = Color(1.2,1.2,0.8) * 100;
 
 	sphere3->material->reflectivity = 0.9;
-	sphere3->material->reflectionScatter = 5.0;
+	sphere3->material->reflectionScatter = 2.0;
 
 
 }
@@ -150,9 +166,8 @@ void update(void)
 	}
 
 	clock_t t;
-	int f;
 	t = clock();
-	int pixelsRendered;
+	int pixelsRendered = 0;
 	switch (render_mode) {
 		case RM_LQ:
 			pixelsRendered = camera.Render(20 * 1000, LQ_RAYS);

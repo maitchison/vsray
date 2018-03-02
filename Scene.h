@@ -1,10 +1,14 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
+
 #include <vector>
+#include <cmath>
 
 #include "Entity.h"
 #include "Light.h"
 #include "Camera.h"
+
 
 class Scene
 {
@@ -23,6 +27,6 @@ public:
 	CollisionResult Trace(Ray* ray);
 
 	/** Calculate the lighting at a given point in space. */
-	Color CalculateLighting(CollisionResult result, Camera camera);
+	Color CalculateLighting(CollisionResult result, Camera camera, int GISamples=16);
 
 };

@@ -35,28 +35,37 @@ CollisionResult Scene::Trace(Ray* ray)
 		}
 	}
 
+	closestCollision.rayDirection = ray->rotation;
+
 	return closestCollision;
 }
 
-Color Scene::CalculateLighting(CollisionResult result, Camera camera)
+Color Scene::CalculateLighting(CollisionResult result, Camera camera, int GISamples)
 {
 	const float AMBIENT_LIGHT = 0.1f;
 
 	// strange to use a collision result, but it has normal information and will eventually have uv.  
 	// Maybe I should call this something else, like a ray collision or something?
 
+	if (!result.hit()) {
+		return camera.SkyColor(result.rayDirection);
+	}
+
 	Color ambientLight = Color(AMBIENT_LIGHT, AMBIENT_LIGHT, AMBIENT_LIGHT);
 
 	// collect ambient light using a hemisphere
-	ambientLight = Color(0,0,0);
-	for (int i = 0; i < 16; i ++) {
-		Vec3d dir = result.normal;
-		dir.rotateX((randf() - 0.5) * M_PI); 
-		dir.rotateY((randf() - 0.5) * M_PI); 
-		Ray ray = Ray(result.location + (dir * 0.001), dir);
-		CollisionResult ambientResult = Trace(&ray);
-		Color ambientSample = CalculateLighting(ambientResult, camera); 
-		ambientLight = ambientLight + (ambientSample * (1/16));
+	if (GISamples >= 2) {
+		ambientLight = Color(0,0,0);
+		for (int i = 0; i < GISamples; i ++) {
+			Vec3d dir = result.normal;
+			//90% sure this is not correct... need to think about this...
+			dir.rotateX((randf() - 0.5) * M_PI); 
+			dir.rotateY((randf() - 0.5) * M_PI); 
+			Ray ray = Ray(result.location + (dir * 0.001), dir);
+			CollisionResult ambientResult = Trace(&ray);
+			Color ambientSample = CalculateLighting(ambientResult, camera, 0); // could use GISamples / 4, which gives multi bound lighting but is much slower 
+			ambientLight = ambientLight + (ambientSample * (1.0/(float)GISamples));
+		}
 	}
 
 	// first we get the color from the hit object
@@ -99,7 +108,7 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera)
 	}
 
 	// Combine into one value.	
-	Color col = (diffuseColor * (diffuseLight + ambientLight)) + specularLight;
+	Color col = (diffuseColor * (diffuseLight + ambientLight)) + specularLight + result.entity->material->emissiveColor;
 	return col;
 
 }

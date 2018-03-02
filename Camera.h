@@ -15,7 +15,7 @@ struct Camera : Entity
 
 	Camera(Vec3d location);
 	
-	Color TraceRay(Ray ray, int depth = 0);
+	Color TraceRay(Ray* ray, int depth = 0);
 	
 	/** Render this number of pixels.  Rendering can be done bit by bit.  
 	 @param pixels: maximum number of pixels to render.  -1 renders entire image.
@@ -25,4 +25,6 @@ struct Camera : Entity
 	*/
 	int Render(int pixels, int oversample=1, float defocus = 0.0f, bool autoReset=false);
 
+	Color SkyColor(Vec3d direction);
+	
 };

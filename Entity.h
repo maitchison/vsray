@@ -19,6 +19,7 @@ struct CollisionResult
 	Vec3d normal;
 	Entity* entity;
 	Vec2d uv;
+	Vec3d rayDirection;
 
 	/* Create a new collision result. */
 	CollisionResult(Vec3d location, Entity* entity, float distance);
@@ -48,6 +49,17 @@ struct Entity
 
 	/** get UV co-ords, position is in object space. */
 	virtual Vec2d getUV(Vec3d pos);
+
+	void* operator new(size_t i)
+	{
+		return _mm_malloc(i, 16);
+	}
+
+	void operator delete(void* p)
+	{
+		_mm_free(p);
+	}
+
 };
 
 struct Ray 

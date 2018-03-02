@@ -13,6 +13,7 @@ public:
 	float reflectionScatter = 0.0;
 	float hardness = 0.1;
 	float specularPower = 1.0;
+	Color emissiveColor = Color(0,0,0);
 	
 public:
 	/* Get color from UV location. */
@@ -52,7 +53,7 @@ public:
 
 	virtual Color getColor(Vec2d uv) override
 	{
-		return col * noise.octaveNoise0_1(uv.x * scale, uv.y * scale, 0, octaves);
+		return col * (float)noise.octaveNoise0_1(uv.x * scale, uv.y * scale, 0, octaves);
 	}
 };
 

@@ -6,21 +6,35 @@ Camera::Camera(Vec3d location) : Entity(location)
 {
 }
 
-Color Camera::TraceRay(Ray ray, int depth)
+Color Camera::SkyColor(Vec3d direction)
+{
+	float theta = direction.y;
+
+	// some ok sky colors
+	// 170 110 93 0
+	// 200 190 170 0.2
+	// 20 150 180 0.3
+	// 20 50 80 1
+	Color skyColor = Color((200.0f/256) - theta / 2, (100.0f/256) - theta / 4, (160.0f/256) + theta/5);
+	return skyColor * 0.1f + Color(0.5f,0.5f,0.9f) * 0.3f;
+}
+
+Color Camera::TraceRay(Ray* ray, int depth)
 {
 	// trace the ray
-	CollisionResult result = scene->Trace(&ray);
+	CollisionResult result = scene->Trace(ray);
 	Color col = Color(0, 0, 0);
 	if (result.hit()) {
 
-		col = scene->CalculateLighting(result, *this);
+		int GISamples = 64;
+		col = scene->CalculateLighting(result, *this, GISamples);
 
 		Material* hitMaterial = result.entity->material;
 		float reflectivity = hitMaterial->reflectivity;
 
 		// reflection
-		if ((reflectivity > 0) && (depth < 10)) {
-			Vec3d incident = (ray.rotation).normalized();
+		if ((reflectivity > 0) && (depth < 4)) {
+			Vec3d incident = (ray->rotation).normalized();
 			Vec3d normal = result.normal.normalized();
 			Vec3d reflected = (incident - ((normal * 2) * (Vec3d::Dot(incident, normal)))).normalized();
 
@@ -36,19 +50,19 @@ Color Camera::TraceRay(Ray ray, int depth)
 				float scatterX = (randf() - 0.5) * scatterRadians;
 				float scatterY = (randf() - 0.5) * scatterRadians;
 				float scatterZ = (randf() - 0.5) * scatterRadians;
-				reflectionRay.rotation.rotateX(scatterX);
-				reflectionRay.rotation.rotateY(scatterY);
-				reflectionRay.rotation.rotateZ(scatterZ);
+				reflectionRay.rotation.rotate(scatterX, scatterY, scatterZ);				
 			}
 
 			// trace the ray
-			Color reflectedColor = TraceRay(reflectionRay, depth + 1);
+			Color reflectedColor = TraceRay(&reflectionRay, depth + 1);
 			float orgFactor = 1.0 - reflectivity;
 			float refFactor = reflectivity * clipf(0.5 - depth / 10, 0, 1);
 			col.r = (col.r * orgFactor) + (reflectedColor.r * (refFactor));
 			col.g = (col.g * orgFactor) + (reflectedColor.g * (refFactor));
 			col.b = (col.b * orgFactor) + (reflectedColor.b * (refFactor));
 		}
+	} else {
+		col = SkyColor(ray->rotation);
 	}
 	return col;
 }
@@ -72,10 +86,12 @@ int Camera::Render(int pixels, int oversample, float defocus, bool autoReset)
 		pixels = totalPixels - pixelOn;
 	}
 	
-	int i = 0;
-	for (i = 0; i < pixels; i++) {
+	int pixelsDone = 0;
 
-		pixelOn++;
+	#pragma loop(hint_parallel(4))  
+	for (int i = 0; i < pixels; i++) {
+
+		pixelOn++;		
 
 		if (pixelOn >= totalPixels)
 		{
@@ -109,12 +125,10 @@ int Camera::Render(int pixels, int oversample, float defocus, bool autoReset)
 			float ry = (1 - 2 * ((y + jittery) / SCREEN_HEIGHT)) * tan(fov / 2 * M_PI / 180);
 			Vec3d dir = Vec3d(rx, -ry, -1).normalized();
 
-			dir.rotateX(rotation.x + (randf() - 0.5) * defocus);
-			dir.rotateY(rotation.y + (randf() - 0.5) * defocus);
-			dir.rotateZ(rotation.z);
-
+			dir.rotate(rotation.x + (randf() - 0.5) * defocus, rotation.y + (randf() - 0.5) * defocus, rotation.z);
+			
 			Ray ray = Ray(location, dir);
-			Color col = TraceRay(ray);
+			Color col = TraceRay(&ray);
 			outputCol = outputCol + (col * (1.0/oversample));
 		}
 		
@@ -127,6 +141,9 @@ int Camera::Render(int pixels, int oversample, float defocus, bool autoReset)
 			gfx.putPixel(x, y+1, Color(0,0,0));
 			gfx.putPixel(x, y+3, Color(0,0,0));
 		}
+
+		pixelsDone++;
+
 	}
-	return i;
+	return pixelsDone;
 }

@@ -71,7 +71,7 @@ void GFX::init(void)
 	for (int y = 0; y < SCREEN_HEIGHT; y++) {
 		for (int x = 0; x < SCREEN_WIDTH; x++) {
 			int cell = ((x / 8) + (y / 8)) % 2;
-			float v = 0.5 + cell * 0.5;
+			float v = 0.5f + cell * 0.5f;
 			buffer[y][x] = Color(v, v, v).int24();
 		}
 	}

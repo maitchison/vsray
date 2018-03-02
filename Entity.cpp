@@ -45,9 +45,7 @@ Vec3d Entity::toObjectSpace(Vec3d pos)
 
 Vec3d Entity::toWorldSpace(Vec3d pos)
 {
-	pos.rotateX(rotation.x);
-	pos.rotateY(rotation.y);
-	pos.rotateZ(rotation.z);
+	pos.rotate(rotation.x, rotation.y, rotation.z);
 	pos *= scale;
 	pos += location;
 	return pos;
@@ -85,8 +83,8 @@ Vec2d Sphere::getUV(Vec3d pos)
 {
 	// spherical mapping	
 	pos /= radius;
-	float u = 0.5 + (atan2(pos.z, pos.x) / (M_PI * 2));
-	float v = 0.5 - (asin(pos.y) / M_PI);
+	float u = 0.5f + (atan2(pos.z, pos.x) / (M_PI * 2));
+	float v = 0.5f - (asin(pos.y) / M_PI);
 	return Vec2d(u, v);
 }
 
@@ -108,20 +106,20 @@ CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 	// first we project the circle center onto the line.
 	// p is now the closest point of the ray to the sphere.
 	Vec3d p = ray->Project(sphere->location);
-	Vec3d d = p - ray->location;
-	float l = Vec3d::Dot(ray->rotation, d) > 0 ? d.abs() : -d.abs();
-
+	
 	// now we have a triangle from the sphere's center, to the projected point, and the intesection point.
 	// we use r^2 = a^2 + b^2 and solve for a.
-	float b = (p - sphere->location).abs();
+	float b2 = (p - sphere->location).abs2();
 
 	// check if we are too far away to hit the sphere.
-	if (b > sphere->radius) return CollisionResult::Empty();
+	float r2 = sphere->radius * sphere->radius;
+	if (b2 > r2) return CollisionResult::Empty();
 
-	float r = sphere->radius;
-	float c = sqrt(r * r - b * b);
+	float c = sqrt(r2 - b2);
 
 	// pick the closest point
+	Vec3d d = p - ray->location;
+	float l = Vec3d::Dot(ray->rotation, d) > 0 ? d.abs() : -d.abs();
 	float t1 = l + c;
 	float t2 = l - c;
 
