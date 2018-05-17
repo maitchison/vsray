@@ -2,18 +2,19 @@
 
 class Scene;
 
+#include <glm/glm.hpp>
+#include "Tools.h"
 #include "Entity.h"
-#include "Vec3d.h"
 #include "Color.h"
 
 struct Camera : Entity
 {
-	Vec3d rotation = Vec3d(0, 0, 0);
+	glm::vec3 rotation = glm::vec3(0, 0, 0);
 	float fov = 90.0f;
 	int pixelOn = 0;
 	Scene* scene;
 
-	Camera(Vec3d location);
+	Camera(glm::vec3 location);
 	
 	Color TraceRay(Ray* ray, int depth = 0);
 	
@@ -25,6 +26,6 @@ struct Camera : Entity
 	*/
 	int Render(int pixels, int oversample=1, float defocus = 0.0f, bool autoReset=false);
 
-	Color SkyColor(Vec3d direction);
+	Color SkyColor(glm::vec3 direction);
 	
 };

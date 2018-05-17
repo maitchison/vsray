@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stdlib.h>
+#include <glm/glm.hpp>
 
-#include "Vec3d.h"
+#include "Tools.h"
 #include "Color.h"
 #include "Material.h"
 
@@ -14,15 +15,15 @@ struct Sphere;
 
 struct CollisionResult
 {
-	Vec3d location;
+	glm::vec3 location;
 	float distance;
-	Vec3d normal;
+	glm::vec3 normal;
 	Entity* entity;
-	Vec2d uv;
-	Vec3d rayDirection;
+	glm::vec2 uv;
+	glm::vec3 rayDirection;
 
 	/* Create a new collision result. */
-	CollisionResult(Vec3d location, Entity* entity, float distance);
+	CollisionResult(glm::vec3 location, Entity* entity, float distance);
 
 	/* Create an empty collision result. */
 	static CollisionResult Empty();
@@ -34,21 +35,21 @@ struct CollisionResult
 
 struct Entity
 {
-	Vec3d location = Vec3d();
-	Vec3d rotation = Vec3d();
-	Vec3d scale = Vec3d(1, 1, 1);
+	glm::vec3 location = glm::vec3();
+	glm::vec3 rotation = glm::vec3();
+	glm::vec3 scale = glm::vec3(1, 1, 1);
 	Color color = Color(1, 1, 1);
 	Material* material = new Material();
 
-	Entity(Vec3d location);
+	Entity(glm::vec3 location);
 	
 	/** test ray collision with this entity. */
 	virtual CollisionResult Trace(Ray* ray);
-	Vec3d toObjectSpace(Vec3d pos);
-	Vec3d toWorldSpace(Vec3d pos);
+	glm::vec3 toObjectSpace(glm::vec3 pos);
+	glm::vec3 toWorldSpace(glm::vec3 pos);
 
 	/** get UV co-ords, position is in object space. */
-	virtual Vec2d getUV(Vec3d pos);
+	virtual glm::vec2 getUV(glm::vec3 pos);
 
 	void* operator new(size_t i)
 	{
@@ -64,27 +65,27 @@ struct Entity
 
 struct Ray 
 {
-	Vec3d location;
-	Vec3d rotation;
+	glm::vec3 location;
+	glm::vec3 rotation;
 	Entity* owner;
 
-	Ray(Vec3d location, Vec3d rotation);
-	Vec3d Project(Vec3d p);
+	Ray(glm::vec3 location, glm::vec3 rotation);
+	glm::vec3 Project(glm::vec3 p);
 };
 
 struct Sphere : Entity
 {
 	float radius;
 
-	Sphere(Vec3d location, float radius);
+	Sphere(glm::vec3 location, float radius);
 	virtual CollisionResult Trace(Ray* ray) override;
-	virtual Vec2d getUV(Vec3d pos) override;
+	virtual glm::vec2 getUV(glm::vec3 pos) override;
 };
 
 struct Plane : Entity
 {	
-	Vec3d normal;
-	Plane(Vec3d location);
+	glm::vec3 normal;
+	Plane(glm::vec3 location);
 	virtual CollisionResult Trace(Ray* ray) override;		
 };
 

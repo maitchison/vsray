@@ -1,16 +1,16 @@
 #include "Scene.h"
 #include "Util.h"
 
-void createCoordinateSystem(Vec3d &N, Vec3d &Nt, Vec3d &Nb)
+void createCoordinateSystem(glm::vec3 &N, glm::vec3 &Nt, glm::vec3 &Nb)
 {
 	if (std::fabs(N.x) > std::fabs(N.y))
-		Nt = Vec3d(N.z, 0, -N.x) / sqrtf(N.x * N.x + N.z * N.z);
+		Nt = glm::vec3(N.z, 0, -N.x) / sqrtf(N.x * N.x + N.z * N.z);
 	else
-		Nt = Vec3d(0, -N.z, N.y) / sqrtf(N.y * N.y + N.z * N.z);
-	Nb = N.crossProduct(Nt);
+		Nt = glm::vec3(0, -N.z, N.y) / sqrtf(N.y * N.y + N.z * N.z);
+	Nb = glm::cross(N, Nt);
 }
 
-Vec3d uniformSampleHemisphere(const float &r1, const float &r2)
+glm::vec3 uniformSampleHemisphere(const float &r1, const float &r2)
 {
 	// cos(theta) = u1 = y
 	// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
@@ -18,7 +18,7 @@ Vec3d uniformSampleHemisphere(const float &r1, const float &r2)
 	float phi = 2 * M_PI * r2;
 	float x = sinTheta * cosf(phi);
 	float z = sinTheta * sinf(phi);
-	return Vec3d(x, r1, z);
+	return glm::vec3(x, r1, z);
 }
 
 /** Cache for global illumination samples. */
@@ -37,11 +37,11 @@ public:
 		buffer = new Color[CACHE_SIZE * CACHE_SIZE * (CACHE_SIZE / 10)];
 	}
 
-	int toBuffer(Vec3d location)
+	int toBuffer(glm::vec3 location)
 	{
 		// stub:
 		// center on a specific location
-		location = location - Vec3d(12, 3, -30);
+		location = location - glm::vec3(12, 3, -30);
 		int bx = (int)(location.x * 8) + (CACHE_SIZE / 2);
 		int by = (int)(location.y * 8) + (CACHE_SIZE / 10 / 2);
 		int bz = (int)(location.z * 8) + (CACHE_SIZE / 2);
@@ -52,7 +52,7 @@ public:
 			return -1;
 	}
 
-	Color* getSample(Vec3d location, Vec3d normal)
+	Color* getSample(glm::vec3 location, glm::vec3 normal)
 	{
 		int index = toBuffer(location);
 		if (index != -1 && buffer[index].a != 0)
@@ -61,7 +61,7 @@ public:
 			return NULL;
 	}
 
-	void setSample(Vec3d location, Vec3d normal, Color col)
+	void setSample(glm::vec3 location, glm::vec3 normal, Color col)
 	{
 		int index = toBuffer(location);
 		if (index != -1) {
@@ -139,19 +139,19 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera, int GISamp
 		}
 
 		if (!hasSample) {
-			Vec3d dir = result.normal;
+			glm::vec3 dir = result.normal;
 
-			Vec3d N = result.normal;
-			Vec3d Nd;
-			Vec3d Nb;
+			glm::vec3 N = result.normal;
+			glm::vec3 Nd;
+			glm::vec3 Nb;
 			createCoordinateSystem(N, Nd, Nb);
 
 			for (int i = 0; i < GISamples; i++) {				
 				// put into local space of the normal
-				Vec3d sample = uniformSampleHemisphere(randf(), randf());
-				Vec3d dir = Nd* sample.x + N*sample.y + Nb*sample.z;
+				glm::vec3 sample = uniformSampleHemisphere(randf(), randf());
+				glm::vec3 dir = Nd* sample.x + N*sample.y + Nb*sample.z;
 				
-				Ray ray = Ray(result.location + (dir * 0.001), dir);
+				Ray ray = Ray(result.location + (dir * 0.001f), dir);
 				CollisionResult ambientResult = Trace(&ray);
 				Color ambientSample = CalculateLighting(ambientResult, camera, GISamples / 16); // could use GISamples / 4 or 0, which gives multi bound lighting but is much slower 
 				ambientLight = ambientLight + (ambientSample * (1.0 / (float)GISamples));
@@ -163,7 +163,7 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera, int GISamp
 	}
 
 	// first we get the color from the hit object
-	Vec2d uv = result.entity->getUV(result.entity->toObjectSpace(result.location));
+	glm::vec2 uv = result.entity->getUV(result.entity->toObjectSpace(result.location));
 	Color diffuseColor = result.entity->material->getColor(uv) * result.entity->color;
 	Color diffuseLight = Color();
 	Color specularLight = Color();
@@ -176,23 +176,23 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera, int GISamp
 		Material* material = result.entity->material;
 
 		// trace from light to object and see what we hit.
-		float distanceToLight = (light->location - result.location).abs();
-		Vec3d toLight = (light->location - result.location).normalized();
+		float distanceToLight = glm::length(light->location - result.location);
+		glm::vec3 toLight = normalize(light->location - result.location);
 
-		Ray ray = Ray(result.location + (toLight * 0.001), toLight);
+		Ray ray = Ray(result.location + (toLight * 0.001f), toLight);
 		
 		CollisionResult shadowResult = Trace(&ray);
 
 		if (!shadowResult.hit()) {
 
 			// calculate diffuse contribution light from this light
-			float diffusePower = Vec3d::Dot(toLight, result.normal);
+			float diffusePower = glm::dot(toLight, result.normal);
 			float attenuation = clipf(100.0 / distanceToLight, 0, 1);
 
 			// calculate speculare light from this light
-			Vec3d toCamera = (camera.location - result.location).normalized();
-			Vec3d halfVector = (toLight + toCamera).normalized();
-			float specularPower = clipf(Vec3d::Dot(result.normal, halfVector), 0, 1);
+			glm::vec3 toCamera = glm::normalize(camera.location - result.location);
+			glm::vec3 halfVector = glm::normalize(toLight + toCamera);
+			float specularPower = clipf(glm::dot(result.normal, halfVector), 0, 1);
 			specularPower = clipf(pow(specularPower, 1/material->hardness), 0, 1) * material->specularPower;
 
 			diffuseLight = diffuseLight + light->color * diffusePower * attenuation;

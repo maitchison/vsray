@@ -1,11 +1,12 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include "Entity.h"
-#include "Vec3d.h"
 
 struct Light : Entity
 {
-	Light(Vec3d Location);
-	Light(Vec3d Location, Color color);
+	Light(glm::vec3 Location);
+	Light(glm::vec3 Location, Color color);
 };
 

@@ -2,11 +2,11 @@
 #include "GFX.h"
 #include "Scene.h"
 
-Camera::Camera(Vec3d location) : Entity(location)
+Camera::Camera(glm::vec3 location) : Entity(location)
 {
 }
 
-Color Camera::SkyColor(Vec3d direction)
+Color Camera::SkyColor(glm::vec3 direction)
 {
 	float theta = direction.y;
 
@@ -34,9 +34,9 @@ Color Camera::TraceRay(Ray* ray, int depth)
 
 		// reflection
 		if ((reflectivity > 0) && (depth < 4)) {
-			Vec3d incident = (ray->rotation).normalized();
-			Vec3d normal = result.normal.normalized();
-			Vec3d reflected = (incident - ((normal * 2) * (Vec3d::Dot(incident, normal)))).normalized();
+			glm::vec3 incident = glm::normalize(ray->rotation);
+			glm::vec3 normal = glm::normalize(result.normal);
+			glm::vec3 reflected = glm::normalize(incident - ((normal * 2.0f) * (glm::dot(incident, normal))));
 
 			// we should push off from the surface a little to make sure we don't hit the same collision point again.
 			// instead I set an owner and disable self reflections
@@ -47,10 +47,13 @@ Color Camera::TraceRay(Ray* ray, int depth)
 			float scatterRadians = hitMaterial->reflectionScatter * M_PI / 180;
 
 			if (scatterRadians > 0) {
+                // note this is not quiet correct, we should scatter in the hemisphere facing away from the normal
+                // with just 2 degrees of freedom.  The results should be similar however.
 				float scatterX = (randf() - 0.5) * scatterRadians;
 				float scatterY = (randf() - 0.5) * scatterRadians;
 				float scatterZ = (randf() - 0.5) * scatterRadians;
-				reflectionRay.rotation.rotate(scatterX, scatterY, scatterZ);				
+
+                reflectionRay.rotation = rotateXYZ(reflectionRay.rotation, scatterX, scatterY, scatterZ);                
 			}
 
 			// trace the ray
@@ -123,9 +126,10 @@ int Camera::Render(int pixels, int oversample, float defocus, bool autoReset)
 			// find the rays direction
 			float rx = (2 * ((x + jitterx) / SCREEN_WIDTH) - 1) * tan(fov / 2 * M_PI / 180) * aspectRatio;
 			float ry = (1 - 2 * ((y + jittery) / SCREEN_HEIGHT)) * tan(fov / 2 * M_PI / 180);
-			Vec3d dir = Vec3d(rx, -ry, -1).normalized();
+			glm::vec3 dir = glm::normalize(glm::vec3(rx, -ry, -1));
 
-			dir.rotate(rotation.x + (randf() - 0.5) * defocus, rotation.y + (randf() - 0.5) * defocus, rotation.z);
+
+			dir = rotateXYZ(dir, rotation.x + (randf() - 0.5) * defocus, rotation.y + (randf() - 0.5) * defocus, rotation.z);
 			
 			Ray ray = Ray(location, dir);
 			Color col = TraceRay(&ray);

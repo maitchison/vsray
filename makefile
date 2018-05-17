@@ -1,5 +1,5 @@
 CC=g++
-CC_FLAGS=-std=c++11
+CC_FLAGS=-std=c++11 -O3
 #LINK_FLAGS=-framework GLUT -framework OpenGL
 LINK_FLAGS=-lm -lGL -lGLU -lglut
 

@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <cmath>
+#include <glm/glm.hpp>
 
 #include "Entity.h"
 #include "Light.h"
@@ -33,4 +34,4 @@ public:
 
 };
 
-void createCoordinateSystem(const Vec3d & N, Vec3d & Nt, Vec3d & Nb);
+void createCoordinateSystem(const glm::vec3 & N, glm::vec3 & Nt, glm::vec3 & Nb);

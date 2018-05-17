@@ -1,7 +1,8 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include "Color.h"
-#include "Vec3d.h"
 #include "PerlinNoise.hpp"
 
 /* Handles 2d materials for objects. */
@@ -17,7 +18,7 @@ public:
 	
 public:
 	/* Get color from UV location. */
-	virtual Color getColor(Vec2d uv)
+	virtual Color getColor(glm::vec2 uv)
 	{
 		return col;
 	}
@@ -27,8 +28,8 @@ public:
 class CheckBoardMaterial : public Material
 {
 public:
-	virtual Color getColor(Vec2d uv) override
-	{
+	virtual Color getColor(glm::vec2 uv) override
+	{        
 		float scale = 64;
 		int x = (uv.x > 0) ? int(uv.x * scale) : int(-uv.x * scale + 1);
 		int y = (uv.y > 0) ? int(uv.y * scale) : int(-uv.y * scale + 1);
@@ -51,7 +52,7 @@ public:
 		noise = siv::PerlinNoise(seed);
 	}
 
-	virtual Color getColor(Vec2d uv) override
+	virtual Color getColor(glm::vec2 uv) override
 	{
 		return col * (float)noise.octaveNoise0_1(uv.x * scale, uv.y * scale, 0, octaves);
 	}

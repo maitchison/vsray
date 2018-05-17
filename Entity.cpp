@@ -3,7 +3,7 @@
 
 //--------------------------------------------------
 
-CollisionResult::CollisionResult(Vec3d location, Entity* entity = NULL, float distance = 0)
+CollisionResult::CollisionResult(glm::vec3 location, Entity* entity = NULL, float distance = 0)
 {
 	this->location = location;
 	this->entity = entity;
@@ -12,7 +12,7 @@ CollisionResult::CollisionResult(Vec3d location, Entity* entity = NULL, float di
 
 CollisionResult CollisionResult::Empty()
 {
-	return CollisionResult(Vec3d(0, 0, 0), NULL);
+	return CollisionResult(glm::vec3(0, 0, 0), NULL);
 }
 
 bool CollisionResult::hit()
@@ -22,30 +22,28 @@ bool CollisionResult::hit()
 
 //--------------------------------------------------
 
-Entity::Entity(Vec3d location)
+Entity::Entity(glm::vec3 location)
 {
 	this->location = location;
 }
 
-Vec2d Entity::getUV(Vec3d pos)
+glm::vec2 Entity::getUV(glm::vec3 pos)
 {
 	// planar mapping
-	return Vec2d(pos.x / 40, pos.z / 40);
+	return glm::vec2(pos.x / 40, pos.z / 40);
 }
 
-Vec3d Entity::toObjectSpace(Vec3d pos)
+glm::vec3 Entity::toObjectSpace(glm::vec3 pos)
 {
 	pos -= location;
 	pos /= scale;
-	pos.rotateZ(-rotation.z);
-	pos.rotateY(-rotation.y);
-	pos.rotateX(-rotation.x);
+    pos = rotateZYX(pos, -rotation.x, -rotation.y, -rotation.z);	
 	return pos;
 }
 
-Vec3d Entity::toWorldSpace(Vec3d pos)
+glm::vec3 Entity::toWorldSpace(glm::vec3 pos)
 {
-	pos.rotate(rotation.x, rotation.y, rotation.z);
+	pos = rotateXYZ(pos, rotation.x, rotation.y, rotation.z);
 	pos *= scale;
 	pos += location;
 	return pos;
@@ -54,22 +52,22 @@ Vec3d Entity::toWorldSpace(Vec3d pos)
 
 //--------------------------------------------------
 
-Ray::Ray(Vec3d location, Vec3d direction) 
+Ray::Ray(glm::vec3 location, glm::vec3 direction) 
 {
 	this->location = location;
 	this->rotation = direction;
 	this->owner = NULL;
 }
 
-Vec3d Ray::Project(Vec3d p)
+glm::vec3 Ray::Project(glm::vec3 p)
 {
 	p = p - location;
-	return location + (rotation * (Vec3d::Dot(rotation, p) / rotation.abs2()));
+	return location + (rotation * (glm::dot(rotation, p) / glm::length2(rotation)));
 }
 
 //--------------------------------------------------
 
-Sphere::Sphere(Vec3d location, float radius) : Entity(location)
+Sphere::Sphere(glm::vec3 location, float radius) : Entity(location)
 {
 	this->radius = radius;
 }
@@ -79,13 +77,13 @@ CollisionResult Sphere::Trace(Ray* ray)
 	return RaySphereIntersection(ray, this);
 }
 
-Vec2d Sphere::getUV(Vec3d pos)
+glm::vec2 Sphere::getUV(glm::vec3 pos)
 {
 	// spherical mapping	
 	pos /= radius;
 	float u = 0.5f + (atan2(pos.z, pos.x) / (M_PI * 2));
 	float v = 0.5f - (asin(pos.y) / M_PI);
-	return Vec2d(u, v);
+	return glm::vec2(u, v);
 }
 
 //--------------------------------------------------
@@ -95,9 +93,9 @@ CollisionResult Plane::Trace(Ray* ray)
 	return RayPlaneIntersection(ray, this);
 }
 
-Plane::Plane(Vec3d location) : Entity(location)
+Plane::Plane(glm::vec3 location) : Entity(location)
 {
-	normal = Vec3d(0, 1, 0);
+	normal = glm::vec3(0, 1, 0);
 }
 
 //--------------------------------------------------
@@ -106,11 +104,11 @@ CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 {
 	// first we project the circle center onto the line.
 	// p is now the closest point of the ray to the sphere.
-	Vec3d p = ray->Project(sphere->location);
+	glm::vec3 p = ray->Project(sphere->location);
 	
 	// now we have a triangle from the sphere's center, to the projected point, and the intesection point.
 	// we use r^2 = a^2 + b^2 and solve for a.
-	float b2 = (p - sphere->location).abs2();
+	float b2 = glm::length2(p - sphere->location);
 
 	// check if we are too far away to hit the sphere.
 	float r2 = sphere->radius * sphere->radius;
@@ -119,8 +117,8 @@ CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 	float c = sqrt(r2 - b2);
 
 	// pick the closest point
-	Vec3d d = p - ray->location;
-	float l = Vec3d::Dot(ray->rotation, d) > 0 ? d.abs() : -d.abs();
+	glm::vec3 d = p - ray->location;
+	float l = glm::dot(ray->rotation, d) > 0 ? glm::length(d) : -glm::length(d);
 	float t1 = l + c;
 	float t2 = l - c;
 
@@ -131,10 +129,10 @@ CollisionResult RaySphereIntersection(Ray* ray, Sphere* sphere)
 
 	if (t1 < 0) return CollisionResult::Empty();
 
-	Vec3d hit = ray->location + (ray->rotation * t1);
+	glm::vec3 hit = ray->location + (ray->rotation * t1);
 
 	CollisionResult result = CollisionResult(hit, sphere, t1);
-	result.normal = (hit - sphere->location).normalized();
+	result.normal = glm::normalize(hit - sphere->location);
 	return result;
 }
 
@@ -144,18 +142,18 @@ CollisionResult RayPlaneIntersection(Ray* ray, Plane* plane)
 	// https://stackoverflow.com/questions/5666222/3d-line-plane-intersection
 
 	// rotate objects such that plane is centered at 0,0 and facing up.
-	Vec3d u = ray->rotation;
-	float dot = Vec3d::Dot(plane->normal, u);
+	glm::vec3 u = ray->rotation;
+	float dot = glm::dot(plane->normal, u);
 
 	if (std::fabs(dot) > EPSILON)
 	{
-		Vec3d w = ray->location - plane->location;
-		float t = -Vec3d::Dot(plane->normal, w) / dot;
+		glm::vec3 w = ray->location - plane->location;
+		float t = -glm::dot(plane->normal, w) / dot;
 		if (t > EPSILON)
 		{
-			Vec3d hit = ray->location + ray->rotation * t;
+			glm::vec3 hit = ray->location + ray->rotation * t;
 			CollisionResult result = CollisionResult(hit, plane, t);
-			result.normal = plane->normal.normalized();
+			result.normal = glm::normalize(plane->normal);
 			return result;
 		}
 	}
