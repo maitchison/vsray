@@ -83,7 +83,7 @@ struct Sphere : Entity
 
 struct Plane : Entity
 {	
-	Vec3d normal = Vec3d(0, 1, 0);
+	Vec3d normal;
 	Plane(Vec3d location);
 	virtual CollisionResult Trace(Ray* ray) override;		
 };

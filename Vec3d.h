@@ -105,6 +105,11 @@ struct Vec3d
 		return atan2(y, x);
 	}
 
+	inline Vec3d crossProduct(Vec3d b)
+	{
+		return Vec3d(this->y*b.z - this->z*b.y, this->z*b.x - this->x*b.z, this->x*b.y - this->y*b.x);
+	}
+
 	inline static float Dot(Vec3d a, Vec3d b)
 	{
 		return a.x * b.x + a.y * b.y + a.z * b.z;
@@ -176,6 +181,11 @@ struct Vec3d
 	inline Vec3d operator*(float b)
 	{
 		return Vec3d(b * x, b * y, b * z);
+	}
+
+	inline Vec3d operator/(float b)
+	{
+		return Vec3d(x/b, y/b, z/b);
 	}
 
 	void rotateX(float theta)

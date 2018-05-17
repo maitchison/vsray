@@ -1,6 +1,76 @@
 #include "Scene.h"
 #include "Util.h"
 
+void createCoordinateSystem(Vec3d &N, Vec3d &Nt, Vec3d &Nb)
+{
+	if (std::fabs(N.x) > std::fabs(N.y))
+		Nt = Vec3d(N.z, 0, -N.x) / sqrtf(N.x * N.x + N.z * N.z);
+	else
+		Nt = Vec3d(0, -N.z, N.y) / sqrtf(N.y * N.y + N.z * N.z);
+	Nb = N.crossProduct(Nt);
+}
+
+Vec3d uniformSampleHemisphere(const float &r1, const float &r2)
+{
+	// cos(theta) = u1 = y
+	// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
+	float sinTheta = sqrtf(1 - r1 * r1);
+	float phi = 2 * M_PI * r2;
+	float x = sinTheta * cosf(phi);
+	float z = sinTheta * sinf(phi);
+	return Vec3d(x, r1, z);
+}
+
+/** Cache for global illumination samples. */
+// doesn't work very well.
+class GICache
+{
+
+	Color* buffer;
+
+public:
+
+	const int CACHE_SIZE = 512;
+
+	GICache()
+	{
+		buffer = new Color[CACHE_SIZE * CACHE_SIZE * (CACHE_SIZE / 10)];
+	}
+
+	int toBuffer(Vec3d location)
+	{
+		// stub:
+		// center on a specific location
+		location = location - Vec3d(12, 3, -30);
+		int bx = (int)(location.x * 8) + (CACHE_SIZE / 2);
+		int by = (int)(location.y * 8) + (CACHE_SIZE / 10 / 2);
+		int bz = (int)(location.z * 8) + (CACHE_SIZE / 2);
+		
+		if ((uint32_t)bx < CACHE_SIZE && (uint32_t)bz < CACHE_SIZE && (uint32_t)by < (CACHE_SIZE / 10))
+			return bx + bz * CACHE_SIZE + by * CACHE_SIZE * CACHE_SIZE;
+		else
+			return -1;
+	}
+
+	Color* getSample(Vec3d location, Vec3d normal)
+	{
+		int index = toBuffer(location);
+		if (index != -1 && buffer[index].a != 0)
+			return &buffer[index]; 
+		else
+			return NULL;
+	}
+
+	void setSample(Vec3d location, Vec3d normal, Color col)
+	{
+		int index = toBuffer(location);
+		if (index != -1) {
+			col.a = 1.0;
+			buffer[index] = col;
+		}
+	}
+};
+
 void Scene::AddEntity(Entity* entity)
 {
 	entities.push_back(entity);
@@ -55,17 +125,41 @@ Color Scene::CalculateLighting(CollisionResult result, Camera camera, int GISamp
 
 	// collect ambient light using a hemisphere
 	if (GISamples >= 2) {
-		ambientLight = Color(0,0,0);
-		for (int i = 0; i < GISamples; i ++) {
-			Vec3d dir = result.normal;
-			//90% sure this is not correct... need to think about this...
-			dir.rotateX((randf() - 0.5) * M_PI); 
-			dir.rotateY((randf() - 0.5) * M_PI); 
-			Ray ray = Ray(result.location + (dir * 0.001), dir);
-			CollisionResult ambientResult = Trace(&ray);
-			Color ambientSample = CalculateLighting(ambientResult, camera, 0); // could use GISamples / 4, which gives multi bound lighting but is much slower 
-			ambientLight = ambientLight + (ambientSample * (1.0/(float)GISamples));
+
+		ambientLight = Color(0, 0, 0);
+		bool hasSample = false;
+
+		// check cache
+		if (giCache) {
+			Color* col = giCache->getSample(result.location, result.normal);
+			if (col) {
+				ambientLight = *col + Color(0,0.2,0.5);
+				hasSample = true;
+			}			
 		}
+
+		if (!hasSample) {
+			Vec3d dir = result.normal;
+
+			Vec3d N = result.normal;
+			Vec3d Nd;
+			Vec3d Nb;
+			createCoordinateSystem(N, Nd, Nb);
+
+			for (int i = 0; i < GISamples; i++) {				
+				// put into local space of the normal
+				Vec3d sample = uniformSampleHemisphere(randf(), randf());
+				Vec3d dir = Nd* sample.x + N*sample.y + Nb*sample.z;
+				
+				Ray ray = Ray(result.location + (dir * 0.001), dir);
+				CollisionResult ambientResult = Trace(&ray);
+				Color ambientSample = CalculateLighting(ambientResult, camera, GISamples / 16); // could use GISamples / 4 or 0, which gives multi bound lighting but is much slower 
+				ambientLight = ambientLight + (ambientSample * (1.0 / (float)GISamples));
+			}
+			if (giCache) {
+				giCache->setSample(result.location, result.normal, ambientLight);
+			}
+		}		
 	}
 
 	// first we get the color from the hit object

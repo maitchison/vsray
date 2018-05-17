@@ -97,9 +97,10 @@ void initScene(void)
 {
 	camera.fov = 90;
 	camera.scene = &scene;
-	camera.location = Vec3d(0, 12, 10);
-	camera.rotation.x = -0.5;	
+	camera.location = Vec3d(0, 10, 30);
+	camera.rotation.x = 0;	
 
+	/*
 	//scene.AddLight(new Light(Vec3d(30, 30, 10), Color(1, 1, 1)));
 
 	Sphere* sphere1;
@@ -119,22 +120,68 @@ void initScene(void)
 	sphere3->color = Color(0.5, 0.5, 1.0f);
 	scene.AddEntity(sphere3);
 
-	sphere4 = new Sphere(Vec3d(12, 3, -30), 3);
+	sphere4 = new Sphere(Vec3d(12, 3, -30), 8);
 	sphere4->color = Color(0.5, 0.5, 1.0f);
 	scene.AddEntity(sphere4);
 
 	Plane* plane1 = new Plane(Vec3d(0,0,0));	
 	scene.AddEntity(plane1);
 
+	Plane* plane2 = new Plane(Vec3d(0, 15, 0));
+	scene.AddEntity(plane2);
+	plane2->normal = Vec3d(0, -1, 0);
+
+	Plane* plane3 = new Plane(Vec3d(0, 0, 20));
+	scene.AddEntity(plane3);
+	plane3->normal = Vec3d(0, 0, -1);
+
+
+
 	plane1->material = new Material();
 	sphere1->material = new Material();
 	sphere2->material = new Material();
 	sphere3->material = new Material();
 
-	sphere4->material->emissiveColor = Color(1.2,1.2,0.8) * 100;
+	sphere4->material->emissiveColor = Color(0.2,1.0,0.3) * 50;
 
 	sphere3->material->reflectivity = 0.9;
 	sphere3->material->reflectionScatter = 2.0;
+	*/
+
+	Plane* plane1 = new Plane(Vec3d(0, 0, -20));
+	plane1->normal = Vec3d(0, 0, 1);
+	scene.AddEntity(plane1);
+
+	Plane* plane2 = new Plane(Vec3d(-20, 0, 0));
+	plane2->normal = Vec3d(1, 0, 0);
+	plane2->material->col = Color(1, 0, 0);
+	scene.AddEntity(plane2);
+
+	Plane* plane3 = new Plane(Vec3d(+20, 0, 0));
+	plane3->normal = Vec3d(-1, 0, 0);
+	plane3->material->col = Color(0, 0, 1);
+	scene.AddEntity(plane3);
+	
+	Plane* plane4 = new Plane(Vec3d(0, 20, 0));
+	plane4->normal = Vec3d(0, -1, 0);
+	scene.AddEntity(plane4);
+	
+	Plane* plane5 = new Plane(Vec3d(0, -20, 0));
+	plane5->normal = Vec3d(0, 1, 0);
+	scene.AddEntity(plane5);
+	
+	Sphere* sphere = new Sphere(Vec3d(0, 20, 0), 5);
+	sphere->color = Color(0.5, 0.5, 1.0f);
+	sphere->material->emissiveColor = Color(1, 1, 1) * 20;
+	scene.AddEntity(sphere);
+
+	sphere = new Sphere(Vec3d(0, 00, 0), 10);
+	sphere->color = Color(0.5, 0.5, 1.0f);
+	sphere->material->reflectionScatter = 20;
+	sphere->material->reflectivity = 0.8;
+	scene.AddEntity(sphere);
+
+
 
 
 }
@@ -177,7 +224,7 @@ void update(void)
 			}
 			break;
 		case RM_HQ:
-			pixelsRendered = camera.Render(20 * 100, HQ_RAYS);
+			pixelsRendered = camera.Render(2 * 100, HQ_RAYS);
 			if (pixelsRendered == 0) {
 				render_mode = RM_NONE;
 			}
@@ -199,6 +246,8 @@ void update(void)
 
 int main(int argc, char **argv)
 {
+	
+
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_DEPTH);
 	glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);

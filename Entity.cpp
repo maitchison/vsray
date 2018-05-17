@@ -97,6 +97,7 @@ CollisionResult Plane::Trace(Ray* ray)
 
 Plane::Plane(Vec3d location) : Entity(location)
 {
+	normal = Vec3d(0, 1, 0);
 }
 
 //--------------------------------------------------

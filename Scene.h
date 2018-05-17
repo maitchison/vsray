@@ -9,11 +9,13 @@
 #include "Light.h"
 #include "Camera.h"
 
+class GICache;
 
 class Scene
 {
 	std::vector<Entity*> entities = std::vector<Entity*>();
 	std::vector<Light*> lights = std::vector<Light*>();
+	GICache* giCache = NULL;
 
 public:
 
@@ -30,3 +32,5 @@ public:
 	Color CalculateLighting(CollisionResult result, Camera camera, int GISamples=16);
 
 };
+
+void createCoordinateSystem(const Vec3d & N, Vec3d & Nt, Vec3d & Nb);
