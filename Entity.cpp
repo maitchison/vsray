@@ -147,7 +147,7 @@ CollisionResult RayPlaneIntersection(Ray* ray, Plane* plane)
 	Vec3d u = ray->rotation;
 	float dot = Vec3d::Dot(plane->normal, u);
 
-	if (abs(dot) > EPSILON)
+	if (std::fabs(dot) > EPSILON)
 	{
 		Vec3d w = ray->location - plane->location;
 		float t = -Vec3d::Dot(plane->normal, w) / dot;
